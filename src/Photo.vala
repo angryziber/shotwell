@@ -376,8 +376,7 @@ public abstract class Photo : PhotoSource, Dateable {
         // normalize user text
         this.row.title = prep_title(this.row.title);
         
-        // don't need to lock the struct in the constructor (and to do so would hurt startup
-        // time)
+        // don't need to lock the struct in the constructor (and to do so would hurt startup time)
         readers.master = row.master.file_format.create_reader(row.master.filepath);
         
         // get the file title of the Photo without using a File object, skipping the separator itself
@@ -632,45 +631,8 @@ public abstract class Photo : PhotoSource, Dateable {
                 break;
                 
             case RawDeveloper.CAMERA:
-                // No development needed.
-                break;
-                
             case RawDeveloper.EMBEDDED:
-                try {
-                    // Read in embedded JPEG.
-                    PhotoMetadata meta = get_master_metadata();
-                    uint c = meta.get_preview_count();
-                    if (c <= 0)
-                        return;
-                    PhotoPreview? prev = meta.get_preview(c - 1);
-                    if (prev == null) {
-                        debug("Could not get preview from metadata");
-                        return;
-                    }
-                    
-                    Gdk.Pixbuf? pix = prev.get_pixbuf();
-                    if (pix == null) {
-                        debug("Could not get preview pixbuf");
-                        return;
-                    }
-                    
-                    // Write out file.
-                    BackingPhotoRow bps = d.create_backing_row_for_development(row.master.filepath);
-                    PhotoFileWriter writer = PhotoFileFormat.JFIF.create_writer(bps.filepath);
-                    writer.write(pix, Jpeg.Quality.HIGH);
-
-                    // Write out metadata
-                    PhotoFileMetadataWriter mwriter = PhotoFileFormat.JFIF.create_metadata_writer(bps.filepath);
-                    mwriter.write_metadata(meta);
-
-                    // Read in backing photo info, add to DB.
-                    add_backing_photo_for_development(d, bps);
-                    
-                    notify_raw_development_modified();
-                } catch (Error e) {
-                    debug("Error accessing embedded preview. Message: %s", e.message);
-                    return;
-                }
+                // No development needed.
                 break;
             
             default:

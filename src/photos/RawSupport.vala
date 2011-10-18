@@ -21,7 +21,8 @@ public class RawFileFormatDriver : PhotoFileFormatDriver {
     }
     
     public override PhotoFileReader create_reader(string filepath) {
-        return new RawReader(filepath);
+        // TODO: need a way to decide whether to use RawReader or RawEmbeddedReader, based on the selected RawDeveloper
+        return new RawEmbeddedReader(filepath);
     }
     
     public override PhotoMetadata create_metadata() {
@@ -255,11 +256,39 @@ public class RawReader : PhotoFileReader {
     }
 }
 
+public class RawEmbeddedReader : PhotoFileReader {
+    public RawEmbeddedReader(string filepath) {
+        base (filepath, PhotoFileFormat.RAW);
+    }
+    
+    public override PhotoMetadata read_metadata() throws Error {
+        PhotoMetadata metadata = new PhotoMetadata();
+        metadata.read_from_file(get_file());
+        
+        return metadata;
+    }
+    
+    public override Gdk.Pixbuf unscaled_read() throws Error {
+        PhotoMetadata meta = read_metadata();
+	    uint c = meta.get_preview_count();
+	    PhotoPreview? prev = c > 0 ? meta.get_preview(c - 1) : null;
+	    if (prev != null)
+	        return prev.get_pixbuf();
+        else 
+		    return new RawReader(get_filepath()).unscaled_read();
+    }
+    
+    public override Gdk.Pixbuf scaled_read(Dimensions full, Dimensions scaled) throws Error {
+        // TODO: should be possible to do faster than unscaled_read()
+        return resize_pixbuf(unscaled_read(), scaled, Gdk.InterpType.BILINEAR);
+    }
+}
+
 // Development mode of a RAW photo.
 public enum RawDeveloper {
     SHOTWELL = 0,  // Developed internally by Shotwell
     CAMERA,        // JPEG from RAW+JPEG pair (if available)
-    EMBEDDED;      // Largest-size
+    EMBEDDED;      // Largest-size embedded preview
     
     public static RawDeveloper[] as_array() {
         return { SHOTWELL, CAMERA, EMBEDDED };
