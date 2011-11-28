@@ -377,7 +377,7 @@ public abstract class Photo : PhotoSource, Dateable {
         this.row.title = prep_title(this.row.title);
         
         // don't need to lock the struct in the constructor (and to do so would hurt startup time)
-        readers.master = row.master.file_format.create_reader(row.master.filepath);
+        readers.master = row.master.file_format.create_reader_for_developer(row.master.filepath, row.developer);
         
         // get the file title of the Photo without using a File object, skipping the separator itself
         string? basename = String.sliced_at_last_char(row.master.filepath, Path.DIR_SEPARATOR);
@@ -391,7 +391,7 @@ public abstract class Photo : PhotoSource, Dateable {
             BackingPhotoRow? e = get_backing_row(row.editable_id);
             if (e != null) {
                 editable = e;
-                readers.editable = editable.file_format.create_reader(editable.filepath);
+                readers.editable = editable.file_format.create_reader_for_developer(editable.filepath, row.developer);
             } else {
                 try {
                     PhotoTable.get_instance().detach_editable(this.row);
@@ -421,7 +421,7 @@ public abstract class Photo : PhotoSource, Dateable {
         // Set up reader for developer.
         if (row.master.file_format == PhotoFileFormat.RAW && developments.has_key(row.developer)) {
             BackingPhotoRow r = developments.get(row.developer);
-            readers.developer = r.file_format.create_reader(r.filepath);
+            readers.developer = r.file_format.create_reader_for_developer(r.filepath, row.developer);
         }
         
         // Set the backing photo state appropriately.
@@ -665,7 +665,7 @@ public abstract class Photo : PhotoSource, Dateable {
             // Switch master to the new photo.
             row.developer = d;
             backing_photo_row = developments.get(d);
-            readers.developer = backing_photo_row.file_format.create_reader(backing_photo_row.filepath);
+            readers.developer = backing_photo_row.file_format.create_reader_for_developer(backing_photo_row.filepath, d);
             
             set_orientation(backing_photo_row.original_orientation);
             
@@ -1066,10 +1066,13 @@ public abstract class Photo : PhotoSource, Dateable {
         params.row.master.file_format = detected.file_format;
         params.row.title = title;
         params.row.rating = rating;
+
+        if (detected.file_format == PhotoFileFormat.RAW)
+            params.row.developer = Config.Facade.get_instance().get_default_raw_developer();
         
         if (params.thumbnails != null) {
-            PhotoFileReader reader = params.row.master.file_format.create_reader(
-                params.row.master.filepath);
+            PhotoFileReader reader = params.row.master.file_format.create_reader_for_developer(
+                params.row.master.filepath, params.row.developer);
             try {
                 ThumbnailCache.generate_for_photo(params.thumbnails, reader, params.row.orientation, 
                     params.row.master.dim);
@@ -1631,7 +1634,7 @@ public abstract class Photo : PhotoSource, Dateable {
                         
                         row.master.filepath = filepath;
                         file_title = file.get_basename();
-                        readers.master = row.master.file_format.create_reader(filepath);
+                        readers.master = row.master.file_format.create_reader_for_developer(filepath, row.developer);
                         
                         altered = true;
                         is_baseline = is_master_baseline();
@@ -1686,7 +1689,7 @@ public abstract class Photo : PhotoSource, Dateable {
                         BackingPhotoTable.get_instance().set_filepath(row.editable_id, filepath);
                         
                         editable.filepath = filepath;
-                        readers.editable = editable.file_format.create_reader(filepath);
+                        readers.editable = editable.file_format.create_reader_for_developer(filepath, row.developer);
                         
                         altered = true;
                         is_baseline = is_editable_baseline();
@@ -3551,7 +3554,7 @@ public abstract class Photo : PhotoSource, Dateable {
         // notify photo is altered *yet* because update_editable will notify, and want to avoid 
         // stacking them up
         internal_remove_all_transformations(false);
-        update_editable(false, file_format.create_reader(file.get_path()));
+        update_editable(false, file_format.create_reader_for_developer(file.get_path(), row.developer));
     }
     
     private void update_editable_attributes() throws Error {

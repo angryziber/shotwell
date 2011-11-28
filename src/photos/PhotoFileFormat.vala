@@ -273,6 +273,10 @@ public enum PhotoFileFormat {
         return get_driver().create_reader(filepath);
     }
     
+    public PhotoFileReader create_reader_for_developer(string filepath, RawDeveloper developer) {
+        return get_driver().create_reader_for_developer(filepath, developer);
+    }
+
     // This means the image and its metadata are writeable.
     public bool can_write() {
         return can_write_image() && can_write_metadata();
@@ -343,6 +347,10 @@ public enum PhotoFileFormat {
 
 public abstract class PhotoFileFormatDriver {
     public abstract PhotoFileFormatProperties get_properties();
+    
+    public virtual PhotoFileReader create_reader_for_developer(string filepath, RawDeveloper developer) {
+        return create_reader(filepath);
+    }
     
     public abstract PhotoFileReader create_reader(string filepath);
     

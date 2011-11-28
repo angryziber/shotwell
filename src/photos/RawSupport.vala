@@ -20,9 +20,15 @@ public class RawFileFormatDriver : PhotoFileFormatDriver {
         return RawFileFormatProperties.get_instance();
     }
     
+    public override PhotoFileReader create_reader_for_developer(string filepath, RawDeveloper developer) {
+        switch (developer) {
+            case RawDeveloper.EMBEDDED: return new RawEmbeddedReader(filepath);
+            default: return new RawReader(filepath);
+        }
+    }
+    
     public override PhotoFileReader create_reader(string filepath) {
-        // TODO: need a way to decide whether to use RawReader or RawEmbeddedReader, based on the selected RawDeveloper
-        return new RawEmbeddedReader(filepath);
+        return create_reader_for_developer(filepath, Config.Facade.get_instance().get_default_raw_developer());
     }
     
     public override PhotoMetadata create_metadata() {
