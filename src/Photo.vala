@@ -372,6 +372,8 @@ public abstract class Photo : PhotoSource, Dateable {
     // same PhotoID cannot exist; it is up to the subclasses to ensure this.
     protected Photo(PhotoRow row) {
         this.row = row;
+        if (row.developer == null)
+             set_default_raw_developer();
         
         // normalize user text
         this.row.title = prep_title(this.row.title);

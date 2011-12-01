@@ -95,7 +95,7 @@ public class PhotoRow {
     public bool metadata_dirty;
     
     // Currently selected developer (RAW only)
-    public RawDeveloper developer;
+    public RawDeveloper? developer;
     
     // Currently selected developer (RAW only)
     public BackingPhotoID[] development_ids;
@@ -392,8 +392,8 @@ public class PhotoTable : DatabaseTable {
         row.time_reimported = (time_t) stmt.column_int64(20);
         row.editable_id = BackingPhotoID(stmt.column_int64(21));
         row.metadata_dirty = stmt.column_int(22) != 0;
-        row.developer = stmt.column_text(23) != null ? RawDeveloper.from_string(stmt.column_text(23)) :
-            Config.Facade.get_instance().get_default_raw_developer();
+        if (stmt.column_text(23) != null)
+            row.developer = RawDeveloper.from_string(stmt.column_text(23));
         row.development_ids[RawDeveloper.SHOTWELL] = BackingPhotoID(stmt.column_int64(24));
         row.development_ids[RawDeveloper.CAMERA] = BackingPhotoID(stmt.column_int64(25));
         row.development_ids[RawDeveloper.EMBEDDED] = BackingPhotoID(stmt.column_int64(26));
