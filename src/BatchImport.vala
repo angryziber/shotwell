@@ -964,11 +964,7 @@ public class BatchImport : Object {
                 
                 // Set the default developer for raw photos
                 if (photo.get_master_file_format() == PhotoFileFormat.RAW) {
-                    RawDeveloper d = Config.Facade.get_instance().get_default_raw_developer();
-                    if (d == RawDeveloper.CAMERA && !photo.is_raw_developer_available(d))
-                        d = RawDeveloper.EMBEDDED;
-                    
-                    photo.set_default_raw_developer(d);
+                    photo.set_default_raw_developer();
                 }
             }
             

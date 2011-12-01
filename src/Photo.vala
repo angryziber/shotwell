@@ -641,7 +641,11 @@ public abstract class Photo : PhotoSource, Dateable {
     }
     
     // Sets the developer internally, but does not actually develop the backing file.
-    public void set_default_raw_developer(RawDeveloper d) {
+    public void set_default_raw_developer() {
+        RawDeveloper d = Config.Facade.get_instance().get_default_raw_developer();
+        if (d == RawDeveloper.CAMERA && !is_raw_developer_available(d))
+            d = RawDeveloper.EMBEDDED;
+    
         lock (row) {
             row.developer = d;
         }
@@ -659,7 +663,7 @@ public abstract class Photo : PhotoSource, Dateable {
             if (!developments.has_key(d))
                 return; // we tried!
             
-            // Disgard changes.
+            // Discard changes.
             revert_to_master(false);
             
             // Switch master to the new photo.
