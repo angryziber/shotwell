@@ -349,11 +349,44 @@ public class PhotoTable : DatabaseTable {
             row.orientation = Orientation.MIN;
         }
     }
+
+    private void fill_row(PhotoRow row, Sqlite.Statement stmt) {
+        row.master.filepath = stmt.column_text(1);
+        row.master.dim = Dimensions(stmt.column_int(2), stmt.column_int(3));
+        row.master.filesize = stmt.column_int64(4);
+        row.master.timestamp = (time_t) stmt.column_int64(5);
+        row.exposure_time = (time_t) stmt.column_int64(6);
+        row.orientation = (Orientation) stmt.column_int(7);
+        row.master.original_orientation = (Orientation) stmt.column_int(8);
+        row.import_id.id = stmt.column_int64(9);
+        row.event_id.id = stmt.column_int64(10);
+        row.transformations = marshall_all_transformations(stmt.column_text(11));
+        row.md5 = stmt.column_text(12);
+        row.thumbnail_md5 = stmt.column_text(13);
+        row.exif_md5 = stmt.column_text(14);
+        row.time_created = (time_t) stmt.column_int64(15);
+        row.flags = stmt.column_int64(16);
+        row.rating = Rating.unserialize(stmt.column_int(17));
+        row.master.file_format = PhotoFileFormat.unserialize(stmt.column_int(18));
+        row.title = stmt.column_text(19);
+        row.backlinks = stmt.column_text(20);
+        row.time_reimported = (time_t) stmt.column_int64(21);
+        row.editable_id = BackingPhotoID(stmt.column_int64(22));
+        row.metadata_dirty = stmt.column_int(23) != 0;
+
+        if (stmt.column_text(24) != null)
+            row.developer = RawDeveloper.from_string(stmt.column_text(24));
+        row.development_ids[RawDeveloper.SHOTWELL] = BackingPhotoID(stmt.column_int64(25));
+        row.development_ids[RawDeveloper.CAMERA] = BackingPhotoID(stmt.column_int64(26));
+        row.development_ids[RawDeveloper.EMBEDDED] = BackingPhotoID(stmt.column_int64(27));
+
+        validate_orientation(row);
+    }
         
     public PhotoRow? get_row(PhotoID photo_id) {
         Sqlite.Statement stmt;
         int res = db.prepare_v2(
-            "SELECT filename, width, height, filesize, timestamp, exposure_time, orientation, "
+            "SELECT id, filename, width, height, filesize, timestamp, exposure_time, orientation, "
             + "original_orientation, import_id, event_id, transformations, md5, thumbnail_md5, "
             + "exif_md5, time_created, flags, rating, file_format, title, backlinks, "
             + "time_reimported, editable_id, metadata_dirty, developer, develop_shotwell_id, "
@@ -370,33 +403,7 @@ public class PhotoTable : DatabaseTable {
             
         PhotoRow row = new PhotoRow();
         row.photo_id = photo_id;
-        row.master.filepath = stmt.column_text(0);
-        row.master.dim = Dimensions(stmt.column_int(1), stmt.column_int(2));
-        row.master.filesize = stmt.column_int64(3);
-        row.master.timestamp = (time_t) stmt.column_int64(4);
-        row.exposure_time = (time_t) stmt.column_int64(5);
-        row.orientation = (Orientation) stmt.column_int(6);
-        row.master.original_orientation = (Orientation) stmt.column_int(7);
-        row.import_id.id = stmt.column_int64(8);
-        row.event_id.id = stmt.column_int64(9);
-        row.transformations = marshall_all_transformations(stmt.column_text(10));
-        row.md5 = stmt.column_text(11);
-        row.thumbnail_md5 = stmt.column_text(12);
-        row.exif_md5 = stmt.column_text(13);
-        row.time_created = (time_t) stmt.column_int64(14);
-        row.flags = stmt.column_int64(15);
-        row.rating = Rating.unserialize(stmt.column_int(16));
-        row.master.file_format = PhotoFileFormat.unserialize(stmt.column_int(17));
-        row.title = stmt.column_text(18);
-        row.backlinks = stmt.column_text(19);
-        row.time_reimported = (time_t) stmt.column_int64(20);
-        row.editable_id = BackingPhotoID(stmt.column_int64(21));
-        row.metadata_dirty = stmt.column_int(22) != 0;
-        if (stmt.column_text(23) != null)
-            row.developer = RawDeveloper.from_string(stmt.column_text(23));
-        row.development_ids[RawDeveloper.SHOTWELL] = BackingPhotoID(stmt.column_int64(24));
-        row.development_ids[RawDeveloper.CAMERA] = BackingPhotoID(stmt.column_int64(25));
-        row.development_ids[RawDeveloper.EMBEDDED] = BackingPhotoID(stmt.column_int64(26));
+        fill_row(row, stmt);
         
         return row;
     }
@@ -417,36 +424,7 @@ public class PhotoTable : DatabaseTable {
         while ((res = stmt.step()) == Sqlite.ROW) {
             PhotoRow row = new PhotoRow();
             row.photo_id.id = stmt.column_int64(0);
-            row.master.filepath = stmt.column_text(1);
-            row.master.dim = Dimensions(stmt.column_int(2), stmt.column_int(3));
-            row.master.filesize = stmt.column_int64(4);
-            row.master.timestamp = (time_t) stmt.column_int64(5);
-            row.exposure_time = (time_t) stmt.column_int64(6);
-            row.orientation = (Orientation) stmt.column_int(7);
-            row.master.original_orientation = (Orientation) stmt.column_int(8);
-            row.import_id.id = stmt.column_int64(9);
-            row.event_id.id = stmt.column_int64(10);
-            row.transformations = marshall_all_transformations(stmt.column_text(11));
-            row.md5 = stmt.column_text(12);
-            row.thumbnail_md5 = stmt.column_text(13);
-            row.exif_md5 = stmt.column_text(14);
-            row.time_created = (time_t) stmt.column_int64(15);
-            row.flags = stmt.column_int64(16);
-            row.rating = Rating.unserialize(stmt.column_int(17));
-            row.master.file_format = PhotoFileFormat.unserialize(stmt.column_int(18));
-            row.title = stmt.column_text(19);
-            row.backlinks = stmt.column_text(20);
-            row.time_reimported = (time_t) stmt.column_int64(21);
-            row.editable_id = BackingPhotoID(stmt.column_int64(22));
-            row.metadata_dirty = stmt.column_int(23) != 0;
-            row.developer = stmt.column_text(24) != null ? RawDeveloper.from_string(stmt.column_text(24)) :
-                RawDeveloper.SHOTWELL;
-            row.development_ids[RawDeveloper.SHOTWELL] = BackingPhotoID(stmt.column_int64(25));
-            row.development_ids[RawDeveloper.CAMERA] = BackingPhotoID(stmt.column_int64(26));
-            row.development_ids[RawDeveloper.EMBEDDED] = BackingPhotoID(stmt.column_int64(27));
-            
-            validate_orientation(row);
-            
+            fill_row(row, stmt);
             all.add(row);
         }
         
