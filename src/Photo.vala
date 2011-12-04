@@ -529,7 +529,7 @@ public abstract class Photo : PhotoSource, Dateable {
     // Returns true if the given raw development was already made.
     public bool is_raw_developer_complete(RawDeveloper d) {
         lock (developments) {
-            return developments.has_key(d);
+            return d == RawDeveloper.EMBEDDED || developments.has_key(d);
         }
     }
     
@@ -603,6 +603,9 @@ public abstract class Photo : PhotoSource, Dateable {
                 try {
                     // Create file and prep.
                     BackingPhotoRow bps = d.create_backing_row_for_development(row.master.filepath);
+                    // Ensure we have correct reader for the chosen developer
+                    readers.master = row.master.file_format.create_reader_for_developer(row.master.filepath, d);
+
                     Gdk.Pixbuf? pix = null;
                     lock (readers) {
                         pix = get_master_pixbuf(Scaling.for_original());
@@ -662,7 +665,7 @@ public abstract class Photo : PhotoSource, Dateable {
             // Perform development, bail out if it doesn't work.
             if (!is_raw_developer_complete(d))
                 develop_photo(d);
-            if (!developments.has_key(d))
+            if (!is_raw_developer_complete(d))
                 return; // we tried!
             
             // Discard changes.
@@ -671,6 +674,8 @@ public abstract class Photo : PhotoSource, Dateable {
             // Switch master to the new photo.
             row.developer = d;
             backing_photo_row = developments.get(d);
+            if (backing_photo_row == null)
+                backing_photo_row = row.master;
             readers.developer = backing_photo_row.file_format.create_reader_for_developer(backing_photo_row.filepath, d);
             
             set_orientation(backing_photo_row.original_orientation);
